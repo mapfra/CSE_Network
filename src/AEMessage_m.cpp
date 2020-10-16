@@ -183,7 +183,7 @@ AEMessage::AEMessage(const char *name, short kind) : ::omnetpp::cMessage(name,ki
 {
     this->URI = 0;
     this->data = 0;
-    this->flag = 0;
+    this->op_code = 0;
     this->maxHop = 0;
 }
 
@@ -209,7 +209,7 @@ void AEMessage::copy(const AEMessage& other)
     this->URI = other.URI;
     this->feature_type = other.feature_type;
     this->data = other.data;
-    this->flag = other.flag;
+    this->op_code = other.op_code;
     this->maxHop = other.maxHop;
 }
 
@@ -219,7 +219,7 @@ void AEMessage::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->URI);
     doParsimPacking(b,this->feature_type);
     doParsimPacking(b,this->data);
-    doParsimPacking(b,this->flag);
+    doParsimPacking(b,this->op_code);
     doParsimPacking(b,this->maxHop);
 }
 
@@ -229,7 +229,7 @@ void AEMessage::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->URI);
     doParsimUnpacking(b,this->feature_type);
     doParsimUnpacking(b,this->data);
-    doParsimUnpacking(b,this->flag);
+    doParsimUnpacking(b,this->op_code);
     doParsimUnpacking(b,this->maxHop);
 }
 
@@ -263,14 +263,14 @@ void AEMessage::setData(int data)
     this->data = data;
 }
 
-int AEMessage::getFlag() const
+int AEMessage::getOp_code() const
 {
-    return this->flag;
+    return this->op_code;
 }
 
-void AEMessage::setFlag(int flag)
+void AEMessage::setOp_code(int op_code)
 {
-    this->flag = flag;
+    this->op_code = op_code;
 }
 
 int AEMessage::getMaxHop() const
@@ -381,7 +381,7 @@ const char *AEMessageDescriptor::getFieldName(int field) const
         "URI",
         "feature_type",
         "data",
-        "flag",
+        "op_code",
         "maxHop",
     };
     return (field>=0 && field<5) ? fieldNames[field] : nullptr;
@@ -394,7 +394,7 @@ int AEMessageDescriptor::findField(const char *fieldName) const
     if (fieldName[0]=='U' && strcmp(fieldName, "URI")==0) return base+0;
     if (fieldName[0]=='f' && strcmp(fieldName, "feature_type")==0) return base+1;
     if (fieldName[0]=='d' && strcmp(fieldName, "data")==0) return base+2;
-    if (fieldName[0]=='f' && strcmp(fieldName, "flag")==0) return base+3;
+    if (fieldName[0]=='o' && strcmp(fieldName, "op_code")==0) return base+3;
     if (fieldName[0]=='m' && strcmp(fieldName, "maxHop")==0) return base+4;
     return basedesc ? basedesc->findField(fieldName) : -1;
 }
@@ -484,7 +484,7 @@ std::string AEMessageDescriptor::getFieldValueAsString(void *object, int field, 
         case 0: return long2string(pp->getURI());
         case 1: return oppstring2string(pp->getFeature_type());
         case 2: return long2string(pp->getData());
-        case 3: return long2string(pp->getFlag());
+        case 3: return long2string(pp->getOp_code());
         case 4: return long2string(pp->getMaxHop());
         default: return "";
     }
@@ -503,7 +503,7 @@ bool AEMessageDescriptor::setFieldValueAsString(void *object, int field, int i, 
         case 0: pp->setURI(string2long(value)); return true;
         case 1: pp->setFeature_type((value)); return true;
         case 2: pp->setData(string2long(value)); return true;
-        case 3: pp->setFlag(string2long(value)); return true;
+        case 3: pp->setOp_code(string2long(value)); return true;
         case 4: pp->setMaxHop(string2long(value)); return true;
         default: return false;
     }

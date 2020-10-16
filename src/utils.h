@@ -16,6 +16,6 @@
 #define UP      0
 #define DOWN    1
 #define SIDE    2
-#define NODIR    3
+#define NODIR   3
 
 #endif
