@@ -24,9 +24,9 @@ class CSE : public cSimpleModule
       virtual void initialize() override;
       virtual void handleMessage(cMessage *msg) override;
       // application specific  method
-      virtual discoveryMessage *generateMessage(int flag);
+      virtual discoveryMessage *generateMessage(int op_code);
   private:
-      // application specific for progagating query according to CSE roles (directions)
+      // application specific for propagating query according to CSE roles (directions)
       void exploreDownstream(discoveryMessage *msg);
       void exploreUpstream(discoveryMessage *msg);
       void exploreSidestream(discoveryMessage *msg);
@@ -37,7 +37,7 @@ class CSE : public cSimpleModule
       // this method forward the initial query to CSEs
       // MAPchg void parseRouting(AEMessage *msg);
       void generateDiscoveryMessage(AEMessage *msg);
-      void generateResponseMessage(discoveryMessage *responseMsg) ;
+      void generateResponseMessage(discoveryMessage *discoveryMsg);
       // not yet used
       // TODO this function organize the map by value-ordering
       void orderingMap(std::map<int,int>);
@@ -58,38 +58,40 @@ notify +22 6
 <(6,34),(2,40),(5,33),(1,35)>*/
 
 /// DATA structures definitions
-       int URI;
+       typedef int URI;  // luigi suggestion
 
-       std::map<int,std::tuple<int,simtime_t,int>> schedulerMap;
+       std::map<URI,std::tuple<int,simtime_t,int>> schedulerMap;
        // this is the omnet++ ledger
        // that collect some data useful for measuring experiments
        // and is also useful for replying the query.
        // this is composed as follow
-       // <id or URI of the CSE ,<gateIndex,simTime,direction>>
-       std::map<std::string,std::map<int,int>> database;
+       // <URI ,<gateIndex,simTime,direction>>
+       std::map<std::string,std::map<URI,int>> database;
+       // TODO: we can  change the URI from int to c type (typedef)
 
 
       //Routing Table
       struct RoutingTablePattern
       {
-         std::map<int,int> database;
-         // key is data (used for filter criteria purposes)
-         // value is AE_URI of that feature_type
-         // e.g. (37,URI_AE1),...
-         std::map<int,int> CSECustomer;
+         std::map<URI,int> database;
+         // don't forget to take into account filter criteria
+         std::map<URI,int> CSECustomer;
          // key is the CSE_URI Customer
          // value is the number of AE feature type
          // e.g. (URI_CSE,#23),...
-         std::map<int,int> CSEProvider;
+         std::map<URI,int> CSEProvider;
          // the same but CSE_URI Providers
-         std::map<int,int> CSESibling;
+         std::map<URI,int> CSESibling;
          // the same but CSE_URI Sibling
-         std::map<int,int> CSEPeer;
+         std::map<URI,int> CSEPeer;
          // the same but CSE_URI Peer
-         std::map<int,int> CSEBucket;
+         std::map<URI,int> CSEBucket;
          // key is the CSE_URI
          // value is the % of successful query result
       } RoutingTable;
+
+
+      //std::map<std::string, struct RoutingTable> SemanticRoutingTable;
 
 
 

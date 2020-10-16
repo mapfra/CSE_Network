@@ -33,17 +33,14 @@
  * <pre>
  * message discoveryMessage
  * {
- *     int initiator;// this is the Address of very first CSE generating Discovery QUERY it will be used intensively (the initiator in oneM2M)
+ *     int URI_init;// this is the identifer of the very first AE generating Discovery QUERY it will be used intensively (the initiator in oneM2M)
  *     // in the recommendation system because sender will be memorized in the BUCKETS[TYPE] during reverse path 
  *     // by each CSE Node
  * 
- *     int URI;// this is unique identifer of CSE, sending the message
+ *     int URI_route;// this is identifer of in route CSE, sending the message to another CSE
  *     string feature_type; // this is type of Resource CSE is looking for. Values can be "waterValve","thermometer","airStation","ATM","smartLock"
  * 
- *     int data;// this is where results are replied; it can be
- *     // MAP Question : What is the difference with DBresult ? empty in case of no results 
- * 
- *     int flag; //this can be
+ *     int op_code; //this can be
  *         // Registration of a CSE (with all the subtree connected with) into another CSE  (0)
  *         // Update of a CSE routing table   (1)
  *         // Cancellation of a CSE (with all the subtree connected with) (2)
@@ -51,7 +48,7 @@
  *         // Responding on Query with a (possibly empty) list of URI (7)
  *         // Notifying new AE (un)registration on the neighbors CSE (8)
  * 
- *     int hopCount = 0; // this value  lists the number of remaining hopes before end of forwarding QUERY 
+ *     int hopCount; // this value  lists the number of remaining hopes before end of forwarding QUERY 
  * 
  *     int direction;// this will be UP (customer to provider) or DOWN (Provider to Customer)
  *     // or SIDE (Sibling to Sibling). direction where the message has been sent
@@ -69,11 +66,10 @@
 class discoveryMessage : public ::omnetpp::cMessage
 {
   protected:
-    int initiator;
-    int URI;
+    int URI_init;
+    int URI_route;
     ::omnetpp::opp_string feature_type;
-    int data;
-    int flag;
+    int op_code;
     int hopCount;
     int direction;
     int initialGateIndex;
@@ -97,16 +93,14 @@ class discoveryMessage : public ::omnetpp::cMessage
     virtual void parsimUnpack(omnetpp::cCommBuffer *b) override;
 
     // field getter/setter methods
-    virtual int getInitiator() const;
-    virtual void setInitiator(int initiator);
-    virtual int getURI() const;
-    virtual void setURI(int URI);
+    virtual int getURI_init() const;
+    virtual void setURI_init(int URI_init);
+    virtual int getURI_route() const;
+    virtual void setURI_route(int URI_route);
     virtual const char * getFeature_type() const;
     virtual void setFeature_type(const char * feature_type);
-    virtual int getData() const;
-    virtual void setData(int data);
-    virtual int getFlag() const;
-    virtual void setFlag(int flag);
+    virtual int getOp_code() const;
+    virtual void setOp_code(int op_code);
     virtual int getHopCount() const;
     virtual void setHopCount(int hopCount);
     virtual int getDirection() const;

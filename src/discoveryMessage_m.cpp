@@ -181,10 +181,9 @@ Register_Class(discoveryMessage)
 
 discoveryMessage::discoveryMessage(const char *name, short kind) : ::omnetpp::cMessage(name,kind)
 {
-    this->initiator = 0;
-    this->URI = 0;
-    this->data = 0;
-    this->flag = 0;
+    this->URI_init = 0;
+    this->URI_route = 0;
+    this->op_code = 0;
     this->hopCount = 0;
     this->direction = 0;
     this->initialGateIndex = 0;
@@ -209,11 +208,10 @@ discoveryMessage& discoveryMessage::operator=(const discoveryMessage& other)
 
 void discoveryMessage::copy(const discoveryMessage& other)
 {
-    this->initiator = other.initiator;
-    this->URI = other.URI;
+    this->URI_init = other.URI_init;
+    this->URI_route = other.URI_route;
     this->feature_type = other.feature_type;
-    this->data = other.data;
-    this->flag = other.flag;
+    this->op_code = other.op_code;
     this->hopCount = other.hopCount;
     this->direction = other.direction;
     this->initialGateIndex = other.initialGateIndex;
@@ -224,11 +222,10 @@ void discoveryMessage::copy(const discoveryMessage& other)
 void discoveryMessage::parsimPack(omnetpp::cCommBuffer *b) const
 {
     ::omnetpp::cMessage::parsimPack(b);
-    doParsimPacking(b,this->initiator);
-    doParsimPacking(b,this->URI);
+    doParsimPacking(b,this->URI_init);
+    doParsimPacking(b,this->URI_route);
     doParsimPacking(b,this->feature_type);
-    doParsimPacking(b,this->data);
-    doParsimPacking(b,this->flag);
+    doParsimPacking(b,this->op_code);
     doParsimPacking(b,this->hopCount);
     doParsimPacking(b,this->direction);
     doParsimPacking(b,this->initialGateIndex);
@@ -239,11 +236,10 @@ void discoveryMessage::parsimPack(omnetpp::cCommBuffer *b) const
 void discoveryMessage::parsimUnpack(omnetpp::cCommBuffer *b)
 {
     ::omnetpp::cMessage::parsimUnpack(b);
-    doParsimUnpacking(b,this->initiator);
-    doParsimUnpacking(b,this->URI);
+    doParsimUnpacking(b,this->URI_init);
+    doParsimUnpacking(b,this->URI_route);
     doParsimUnpacking(b,this->feature_type);
-    doParsimUnpacking(b,this->data);
-    doParsimUnpacking(b,this->flag);
+    doParsimUnpacking(b,this->op_code);
     doParsimUnpacking(b,this->hopCount);
     doParsimUnpacking(b,this->direction);
     doParsimUnpacking(b,this->initialGateIndex);
@@ -251,24 +247,24 @@ void discoveryMessage::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->gateVector);
 }
 
-int discoveryMessage::getInitiator() const
+int discoveryMessage::getURI_init() const
 {
-    return this->initiator;
+    return this->URI_init;
 }
 
-void discoveryMessage::setInitiator(int initiator)
+void discoveryMessage::setURI_init(int URI_init)
 {
-    this->initiator = initiator;
+    this->URI_init = URI_init;
 }
 
-int discoveryMessage::getURI() const
+int discoveryMessage::getURI_route() const
 {
-    return this->URI;
+    return this->URI_route;
 }
 
-void discoveryMessage::setURI(int URI)
+void discoveryMessage::setURI_route(int URI_route)
 {
-    this->URI = URI;
+    this->URI_route = URI_route;
 }
 
 const char * discoveryMessage::getFeature_type() const
@@ -281,24 +277,14 @@ void discoveryMessage::setFeature_type(const char * feature_type)
     this->feature_type = feature_type;
 }
 
-int discoveryMessage::getData() const
+int discoveryMessage::getOp_code() const
 {
-    return this->data;
+    return this->op_code;
 }
 
-void discoveryMessage::setData(int data)
+void discoveryMessage::setOp_code(int op_code)
 {
-    this->data = data;
-}
-
-int discoveryMessage::getFlag() const
-{
-    return this->flag;
-}
-
-void discoveryMessage::setFlag(int flag)
-{
-    this->flag = flag;
+    this->op_code = op_code;
 }
 
 int discoveryMessage::getHopCount() const
@@ -416,7 +402,7 @@ const char *discoveryMessageDescriptor::getProperty(const char *propertyname) co
 int discoveryMessageDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 10+basedesc->getFieldCount() : 10;
+    return basedesc ? 9+basedesc->getFieldCount() : 9;
 }
 
 unsigned int discoveryMessageDescriptor::getFieldTypeFlags(int field) const
@@ -435,11 +421,10 @@ unsigned int discoveryMessageDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,
         FD_ISEDITABLE,
         FD_ISEDITABLE,
-        FD_ISEDITABLE,
         FD_ISCOMPOUND,
         FD_ISCOMPOUND,
     };
-    return (field>=0 && field<10) ? fieldTypeFlags[field] : 0;
+    return (field>=0 && field<9) ? fieldTypeFlags[field] : 0;
 }
 
 const char *discoveryMessageDescriptor::getFieldName(int field) const
@@ -451,34 +436,32 @@ const char *discoveryMessageDescriptor::getFieldName(int field) const
         field -= basedesc->getFieldCount();
     }
     static const char *fieldNames[] = {
-        "initiator",
-        "URI",
+        "URI_init",
+        "URI_route",
         "feature_type",
-        "data",
-        "flag",
+        "op_code",
         "hopCount",
         "direction",
         "initialGateIndex",
         "dbResult",
         "gateVector",
     };
-    return (field>=0 && field<10) ? fieldNames[field] : nullptr;
+    return (field>=0 && field<9) ? fieldNames[field] : nullptr;
 }
 
 int discoveryMessageDescriptor::findField(const char *fieldName) const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
     int base = basedesc ? basedesc->getFieldCount() : 0;
-    if (fieldName[0]=='i' && strcmp(fieldName, "initiator")==0) return base+0;
-    if (fieldName[0]=='U' && strcmp(fieldName, "URI")==0) return base+1;
+    if (fieldName[0]=='U' && strcmp(fieldName, "URI_init")==0) return base+0;
+    if (fieldName[0]=='U' && strcmp(fieldName, "URI_route")==0) return base+1;
     if (fieldName[0]=='f' && strcmp(fieldName, "feature_type")==0) return base+2;
-    if (fieldName[0]=='d' && strcmp(fieldName, "data")==0) return base+3;
-    if (fieldName[0]=='f' && strcmp(fieldName, "flag")==0) return base+4;
-    if (fieldName[0]=='h' && strcmp(fieldName, "hopCount")==0) return base+5;
-    if (fieldName[0]=='d' && strcmp(fieldName, "direction")==0) return base+6;
-    if (fieldName[0]=='i' && strcmp(fieldName, "initialGateIndex")==0) return base+7;
-    if (fieldName[0]=='d' && strcmp(fieldName, "dbResult")==0) return base+8;
-    if (fieldName[0]=='g' && strcmp(fieldName, "gateVector")==0) return base+9;
+    if (fieldName[0]=='o' && strcmp(fieldName, "op_code")==0) return base+3;
+    if (fieldName[0]=='h' && strcmp(fieldName, "hopCount")==0) return base+4;
+    if (fieldName[0]=='d' && strcmp(fieldName, "direction")==0) return base+5;
+    if (fieldName[0]=='i' && strcmp(fieldName, "initialGateIndex")==0) return base+6;
+    if (fieldName[0]=='d' && strcmp(fieldName, "dbResult")==0) return base+7;
+    if (fieldName[0]=='g' && strcmp(fieldName, "gateVector")==0) return base+8;
     return basedesc ? basedesc->findField(fieldName) : -1;
 }
 
@@ -498,11 +481,10 @@ const char *discoveryMessageDescriptor::getFieldTypeString(int field) const
         "int",
         "int",
         "int",
-        "int",
         "DBresult",
         "GateVector",
     };
-    return (field>=0 && field<10) ? fieldTypeStrings[field] : nullptr;
+    return (field>=0 && field<9) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **discoveryMessageDescriptor::getFieldPropertyNames(int field) const
@@ -569,16 +551,15 @@ std::string discoveryMessageDescriptor::getFieldValueAsString(void *object, int 
     }
     discoveryMessage *pp = (discoveryMessage *)object; (void)pp;
     switch (field) {
-        case 0: return long2string(pp->getInitiator());
-        case 1: return long2string(pp->getURI());
+        case 0: return long2string(pp->getURI_init());
+        case 1: return long2string(pp->getURI_route());
         case 2: return oppstring2string(pp->getFeature_type());
-        case 3: return long2string(pp->getData());
-        case 4: return long2string(pp->getFlag());
-        case 5: return long2string(pp->getHopCount());
-        case 6: return long2string(pp->getDirection());
-        case 7: return long2string(pp->getInitialGateIndex());
-        case 8: {std::stringstream out; out << pp->getDbResult(); return out.str();}
-        case 9: {std::stringstream out; out << pp->getGateVector(); return out.str();}
+        case 3: return long2string(pp->getOp_code());
+        case 4: return long2string(pp->getHopCount());
+        case 5: return long2string(pp->getDirection());
+        case 6: return long2string(pp->getInitialGateIndex());
+        case 7: {std::stringstream out; out << pp->getDbResult(); return out.str();}
+        case 8: {std::stringstream out; out << pp->getGateVector(); return out.str();}
         default: return "";
     }
 }
@@ -593,14 +574,13 @@ bool discoveryMessageDescriptor::setFieldValueAsString(void *object, int field, 
     }
     discoveryMessage *pp = (discoveryMessage *)object; (void)pp;
     switch (field) {
-        case 0: pp->setInitiator(string2long(value)); return true;
-        case 1: pp->setURI(string2long(value)); return true;
+        case 0: pp->setURI_init(string2long(value)); return true;
+        case 1: pp->setURI_route(string2long(value)); return true;
         case 2: pp->setFeature_type((value)); return true;
-        case 3: pp->setData(string2long(value)); return true;
-        case 4: pp->setFlag(string2long(value)); return true;
-        case 5: pp->setHopCount(string2long(value)); return true;
-        case 6: pp->setDirection(string2long(value)); return true;
-        case 7: pp->setInitialGateIndex(string2long(value)); return true;
+        case 3: pp->setOp_code(string2long(value)); return true;
+        case 4: pp->setHopCount(string2long(value)); return true;
+        case 5: pp->setDirection(string2long(value)); return true;
+        case 6: pp->setInitialGateIndex(string2long(value)); return true;
         default: return false;
     }
 }
@@ -614,8 +594,8 @@ const char *discoveryMessageDescriptor::getFieldStructName(int field) const
         field -= basedesc->getFieldCount();
     }
     switch (field) {
-        case 8: return omnetpp::opp_typename(typeid(DBresult));
-        case 9: return omnetpp::opp_typename(typeid(GateVector));
+        case 7: return omnetpp::opp_typename(typeid(DBresult));
+        case 8: return omnetpp::opp_typename(typeid(GateVector));
         default: return nullptr;
     };
 }
@@ -630,8 +610,8 @@ void *discoveryMessageDescriptor::getFieldStructValuePointer(void *object, int f
     }
     discoveryMessage *pp = (discoveryMessage *)object; (void)pp;
     switch (field) {
-        case 8: return (void *)(&pp->getDbResult()); break;
-        case 9: return (void *)(&pp->getGateVector()); break;
+        case 7: return (void *)(&pp->getDbResult()); break;
+        case 8: return (void *)(&pp->getGateVector()); break;
         default: return nullptr;
     }
 }

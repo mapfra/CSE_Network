@@ -2,7 +2,7 @@
 
 void CSE::initialize()
 {
-    URI = getId();  // this is the omnet id which is given when creating the module in the NED file (sequential numbering )
+    int URI = getId();  // this is the omnet id which is given when creating the module in the NED file (sequential numbering )
 }
 void CSE::handleMessage(cMessage *msg)
 {
@@ -14,7 +14,7 @@ void CSE::handleMessage(cMessage *msg)
        AEMessage *aeMsg = check_and_cast<AEMessage *>(msg);
        // Create message object and set source and destination field.
 
-       int op_code = aeMsg->getFlag();  // flag contains the type of message
+       int op_code = aeMsg->getOp_code();  // op_code contains the type of message
 
        switch(op_code) {
            case REGISTRATION: {
@@ -30,8 +30,6 @@ void CSE::handleMessage(cMessage *msg)
            }
            case QUERY : {
                // if it is a query msg we create a discovery msg and we start ASDR
-               // mapchg parseRouting(aeMsg);
-
                generateDiscoveryMessage(aeMsg);
                break;
            }
@@ -42,13 +40,13 @@ void CSE::handleMessage(cMessage *msg)
          EV<< "entering the CSE part  " <<"\n";
          // if the message comes from another resource that an AE
          discoveryMessage *discoveryMsg = check_and_cast<discoveryMessage *>(msg);
-         EV<< "The Message is of type : " << discoveryMsg->getFlag() << "\n";
+         EV<< "The Message is of type : " << discoveryMsg->getOp_code() << "\n";
          if (msg->isSelfMessage()){
              //the discovery message comes from the AE and should be forwarded
              EV<< "It is a self Message  " <<"\n";
          } else{
              EV<< "It is not a self Message  " ;
-             if (discoveryMsg->getFlag()==QUERY){
+             if (discoveryMsg->getOp_code()==QUERY){
                  EV<< "of type query\n";
              std::vector<cGate *> tempGateVector;
              // You put on top of the list  the name of the gate to be used in the return path (getOtherHalf)
@@ -59,40 +57,42 @@ void CSE::handleMessage(cMessage *msg)
              }else{
                  EV<< "of type response so no new gate added\n";
              }
-         } // end ifselfmessage
+             }// end if self-message
              // switch on 2 possible opcodes between CSEs : QUERY or RESPONSE
 
-             int op_code = discoveryMsg->getFlag();
+             int op_code = discoveryMsg->getOp_code();
 
              switch(op_code){
              EV<< "Switch OPCODE  \n";
 
              case QUERY: {
 
-               EV<< "The Message is a query \n";
+                 std::map<int,int> res = DBLookup(discoveryMsg);
+                 // If we find the index "NOT_FOUND" in the map, it means that
+                 // the feature is not present in the database
+                 if((res.find(NOT_FOUND) == res.end()))
+                 {
+                     EV<< "DB Lookup Successful"<< "\n";
+                     discoveryMsg->setDbResult(res);
+                     generateResponseMessage(discoveryMsg);
 
-
-
-               if  (discoveryMsg->getHopCount()<=0){
-                   //EV<< "HopCount=" << discoveryMsg->getHopCount() <<"\n";
-                   //Respond to the initiator that the discovery ends
-                   // TODO: DBLookup part to be added here
-                    discoveryMsg->setFlag(RESPONSE);
-                   // TODO: set the message flags according to result from DBLookup
-                   //You extract from the top of the list the gate that has to be used
-                    //MAP change
-                    EV<< "THopcount is 0 so we generate a self response message \n";
-                    generateResponseMessage(discoveryMsg);
-                   //send(discoveryMsg->dup(), discoveryMsg->getGateVector().back()->getName() , discoveryMsg->getGateVector().back()->getIndex());
-
-                   //send(discoveryMsg->dup(), discoveryMsg->getGateVector().back()->getName() , discoveryMsg->getGateVector().back()->getIndex());
-                   //discoveryMsg->getGateVector().pop_back();
-                              //EV<< "back cse event7  " << discoveryMsg->getGateVector().back()->getFullName();
-                              //EV<< "back name " << discoveryMsg->getGateVector().back()->getBaseName()<< "\n";
-                             // EV<< "back index " << discoveryMsg->getGateVector().back()->getIndex() << "\n";
-               } else {
+                }
+                 // Otherwise it is present and we should reply back with the data extracted from the database
+                else{
+                     EV<< "The Message is a query \n";
+                     EV<< "DB Lookup not Successful"<< "\n";
+                     if  (discoveryMsg->getHopCount()<=0){
+                         //Respond to the URI_init that the discovery ends
+                         // TODO: DBLookup part to be added here
+                         discoveryMsg->setOp_code(RESPONSE);
+                         // TODO: set the message op_codes according to result from DBLookup
+                         //You extract from the top of the list the gate that has to be used
+                         EV<< "Hop count is 0 so we generate a self response message \n";
+                         generateResponseMessage(discoveryMsg);
+                     }
+                     else {
                     // decrease the hop count
-                    EV<< "we are in the else :  hopcount is currently " << discoveryMsg->getHopCount() <<"\n";
+                    EV<< "we are in the else :  hop count is currently " << discoveryMsg->getHopCount() <<"\n";
                     discoveryMsg->setHopCount(discoveryMsg->getHopCount()-1);
                     EV<< "New HopCount=" << discoveryMsg->getHopCount() <<"\n";
                     // and we check the direction of discoveryMsg
@@ -101,21 +101,23 @@ void CSE::handleMessage(cMessage *msg)
 
                     case DOWN :
                     {
-                       EV<< "We go down \n";
-                       int t= gateSize("customer");
-                       if (t>0){
-                           // if there are customers
-                           int vectSize = gate("customer$o",0)->getVectorSize();
-                           for(int i=0; i<vectSize; i++)
-                           {
-                            send(discoveryMsg->dup(),"customer$o", i);
-                           }
-                       }else {
-                          generateResponseMessage(discoveryMsg);
-                       }
-                       //propagate the discovery according to the direction and the algo
-                       //exploreDownstream(discoveryMsg);
+                        exploreDownstream(discoveryMsg);
+                        exploreSidestream(discoveryMsg);
                        break;
+                       }
+                    case SIDE:
+                    {
+                        exploreSidestream(discoveryMsg);
+                        exploreDownstream(discoveryMsg);
+                        exploreUpstream(discoveryMsg);
+                       break;
+                    }
+                    case UP:
+                    {
+                        exploreUpstream(discoveryMsg);
+                        exploreDownstream(discoveryMsg);
+                        exploreSidestream(discoveryMsg);
+                        break;
                     }
                     default :
                        break;
@@ -123,34 +125,51 @@ void CSE::handleMessage(cMessage *msg)
 
                } //end of else
                break;
+                }
              }// end of query case
 
-               case RESPONSE: {
-                   EV<<"The Message is a response \n";
-                   int i= discoveryMsg->getGateVector().size();
-                   if(i>=0){
-                     EV<< "Size of Gatevector is " << i << "\n";
-                     std::vector<cGate *> tempGateVector;
-                     // You put on top of the list  the name of the gate to be used in the return path (getOtherHalf)
-                     tempGateVector=discoveryMsg->getGateVector();
-                     const char * returnGate=tempGateVector.back()->getName();
-                     int returnIndex =tempGateVector.back()->getIndex();
+             case RESPONSE:
+             {
+                 EV<<"The Message is a response \n";
+                 int i= discoveryMsg->getGateVector().size();
+                 if(i>=0){
+                 EV<< "Size of Gate vector is " << i << "\n";
+                 std::vector<cGate *> tempGateVector;
+                 // You put on top of the list  the name of the gate to be used in the return path (getOtherHalf)
+                 tempGateVector=discoveryMsg->getGateVector();
+                 const char * returnGate=tempGateVector.back()->getName();
+                 int returnIndex =tempGateVector.back()->getIndex();
 
-                     tempGateVector.pop_back();
-                     discoveryMsg->setGateVector(tempGateVector);
-                     EV<< "gate removed = " << returnGate << "of index " << returnIndex <<"\n";
-                     i= discoveryMsg->getGateVector().size();
-                     EV<< "New Size of Gatevector is " << i << "\n";
-
-                     send(discoveryMsg->dup(), returnGate , returnIndex);
-                    } else {
-                     EV<< "We are in the last gate Message Delivered"<< "\n";
+                 tempGateVector.pop_back();
+                 discoveryMsg->setGateVector(tempGateVector);
+                 EV<< "gate removed = " << returnGate << "of index " << returnIndex <<"\n";
+                 i= discoveryMsg->getGateVector().size();
+                 EV<< "New Size of Gate vector is " << i << "\n";
+                 EV<< "<Module Name"<< discoveryMsg->getName()<< "gate name"<< returnGate<<"\n"<<"gateIndex"<< returnIndex<<"\n";
+                 send(discoveryMsg->dup(), returnGate , returnIndex);
+                } else {
+                 EV<< "We are in the last gate Message Delivered"<< "\n";
                     }
               break;
               } //end of response case
+             default:
+                 break;
            } // end of switch opcode
 } // end of else AE or CSE
 }// end of handle message
+
+void CSE::generateResponseMessage(discoveryMessage* responseMsg)
+{
+    EV<< "inside generateResponseMessage Procedure"<<"\n";
+    // we set op_code to RESPONSE
+    responseMsg->setOp_code(RESPONSE);
+    //These data may change during the routing of the query
+    // we set the direction to NODIR
+    responseMsg->setDirection(NODIR);
+
+    cancelEvent(responseMsg);
+    scheduleAt(simTime(), responseMsg);
+}
 
 // this method forward the initial query to CSE
 // void CSE::parseRouting(AEMessage *msg) {
@@ -163,13 +182,13 @@ void CSE::generateDiscoveryMessage(AEMessage *msg) {
 
     // we created a discovery message
     discoveryMessage *queryMsg = new discoveryMessage ("QUERY");
-    // we extract the URI from the AE initiator of the message
-    queryMsg->setInitiator(msg->getURI());
+    // we extract the URI from the AE URI_init of the message
+    queryMsg->setURI_init(msg->getURI());
     // we extract the msg feature_type from AEmessage and we set it in the discovery Message
     queryMsg->setFeature_type(msg->getFeature_type());
 
-    // we set flag to QUERY
-    queryMsg->setFlag(QUERY);
+    // we set op_code to QUERY
+    queryMsg->setOp_code(QUERY);
 
 
 //These data may change during the routing of the query
@@ -200,27 +219,6 @@ void CSE::generateDiscoveryMessage(AEMessage *msg) {
 
     // delete the AE message
     delete msg;
-
-}
-
-void CSE::generateResponseMessage(discoveryMessage *responseMsg) {
-// this function transforms a query message to a discovery message
-     // these data should not change during the routing between CSEs
-    // TODO lets consider if the URI parameter  is useful ??
-    EV<< "inside generateResponseMessage Procedure"<<"\n";
-    // we set flag to RESPONSE
-    responseMsg->setFlag(RESPONSE);
-
-   //These data may change during the routing of the query
-
-
-    // we set the direction to NODIR
-    responseMsg->setDirection(NODIR);
-
-
-    // we schedule this query message to be sent asap in the simulation schedule
-    scheduleAt(simTime(),responseMsg);
-
 }
 
 // used for exploring in customers
@@ -233,42 +231,20 @@ void CSE::exploreDownstream(discoveryMessage *discoveryMsg)
     {
         EV<< "inside Downstream"<<"\n";
         // it detects the size of the customer gates
+        int Uri_customer = gate("provider$o",0)->getId();
+        EV<< "uri of customer"<< Uri_customer<< "\n";
         int vectSize = gate("customer$o",0)->getVectorSize();
         // it register in the scheduler map the UR of the CSE and the parameters of the gate
-        // TODO this things should be probably removed
-       // std::tuple <int,simtime_t,int> values = schedulerMap[discoveryMsg->getId()];
-       // std::tuple <int,simtime_t,int> mapEntry;
-       // mapEntry =  std::make_tuple( std::get<0>(values), std::get<1>(values), std::get<2>(values));
-       // schedulerMap[discoveryMsg->getURI()]=mapEntry;
-
-        // TODO we need changes in here
-
         // we will forward through the vectSize of customer gate which have all the customer
         for(int i=0; i<vectSize; i++)
         {
-               // if (!(discoveryMsg->getInitialGateIndex()==i))
-                //{
-                    send(discoveryMsg->dup(),"customer$o",i);
-                //}
-                //else
-                //{
-                   // discoveryMsg->setDirection(SIDE);
-                   // exploreSidestream(discoveryMsg);
-
-               // }
-
-            }
+            // TODO: should be modify
+            send(discoveryMsg->dup(),"customer$o",i);
+        }
         }
     else{
-        if  (discoveryMsg->getHopCount()==0){
-            return;
-    }
-        else{
-            discoveryMsg->setHopCount(discoveryMsg->getHopCount()-1);
-            EV<< "New HopCount=" << discoveryMsg->getHopCount() <<"\n";
-            return;
+         generateResponseMessage(discoveryMsg);
         }
-   }
 }
 
 // Used for exploring resources in Siblings
@@ -279,48 +255,24 @@ void CSE::exploreSidestream(discoveryMessage *discoveryMsg)
     // if value is greater than zero means if we have siblings
     if (t>0)
     {
-        // TODO we need changes in here
         // we detect the size of the gate
         int vectSize = gate("sibling$o",0)->getVectorSize();
         EV <<"NO of siblings: "<< vectSize<< "\n";
-        //std::tuple<int,simtime_t,int> values = schedulerMap[discoveryMsg->getURI()];
-        //EV << "Value of numForward: " << numForward << " ,  myIndex is:" << getIndex() << "\n";
-        //std::tuple <int,simtime_t,int> mapEntry;
-       // mapEntry =  std::make_tuple( std::get<0>(values), std::get<1>(values), std::get<2>(values));
-        //schedulerMap[discoveryMsg->getURI()]=mapEntry;
         // we forward the Discovery Message to all the siblings
         for(int i=0; i<vectSize; i++)
         {
-            //if (!(discoveryMsg->getInitialGateIndex()==i))
-               //{
-
-                   send(discoveryMsg->dup(),"sibling$o",i);
-               //}
-               //else
-               //{
-                  /* std::vector<cGate *> gateVect = discoveryMsg->getGateVector();
-                    // You put on top of the list  the name of the gate to be used in the return path (getOtherHalf)
-                    gateVect.push_back(discoveryMsg->getArrivalGate()->getOtherHalf());
-                    // We  update the query msg with this vector
-                    discoveryMsg->setGateVector(gateVect);*/
-                     // increase the hop count
-                                    //}
+            EV<< "arrival gate id ="<< discoveryMsg->getInitialGateIndex();
 
 
-           }
+                send(discoveryMsg->dup(),"sibling$o",i);
        }
+    }
     else
     {
-        if  (discoveryMsg->getHopCount()==0){
-                    return;
-            }
-                else{
-                    discoveryMsg->setHopCount(discoveryMsg->getHopCount()-1);
-                    EV<< "New HopCount=" << discoveryMsg->getHopCount() <<"\n";
-                    return;
-                }
+        generateResponseMessage(discoveryMsg);
+
     }
-}
+    }
 
 // used to explore the Providers
 void CSE::exploreUpstream(discoveryMessage *discoveryMsg)
@@ -332,78 +284,69 @@ void CSE::exploreUpstream(discoveryMessage *discoveryMsg)
     {
         // we detect the size of vector gate Provider
         int vectSize = gate("provider$o",0)->getVectorSize();
-
-       // std::tuple<int,simtime_t,int> values = schedulerMap[discoveryMsg->getURI()];
-
         EV << "inside upstream...Vector Size " << vectSize << "\n";
-
-       // std::tuple <int,simtime_t,int> mapEntry;
-       // mapEntry =  std::make_tuple( std::get<0>(values), std::get<1>(values), std::get<2>(values));
-
-       // schedulerMap[discoveryMsg->getURI()]=mapEntry;
-
         // we forward to all Providers
         for(int i=0; i<vectSize; i++)
         {
-            // TODO we need changes in here
-           // if (!(discoveryMsg->getInitialGateIndex()==i))
-            //{
-                send(discoveryMsg->dup(),"provider$o", i);
-             //}else{
-                //  std::vector<cGate *> gateVe = discoveryMsg->getGateVector();
-                  // You put on top of the list  the name of the gate to be used in the return path (getOtherHalf)
-                //  gateVe.push_back(discoveryMsg->getArrivalGate()->getOtherHalf());
-                  // We  update the query msg with this vector
-                //  discoveryMsg->setGateVector(gateVe);
-                  // increase the hop count
-             //}
-
-
-            }
+            send(discoveryMsg->dup(),"provider$o", i);
         }
-
+        }
     else{
-        EV <<"Discovery Finished "<< "\n";
-        }
+        generateResponseMessage(discoveryMsg);
+    }
 }
+
 // this function is used to update the database
 void CSE::updateDatabase(AEMessage *msg, int op_code)
 {
-    // we get the flag of the message and we apply the switch_case
+    // we get the op_code of the message and we apply the switch_case
     switch(op_code)
     {
     // the message is sent to be stored in the Database
         case REGISTRATION:
         {
-            // we extract the feature_type; URI; data from the AEmessage
+            // we extract the feature_type; URI_route; data from the AEmessage
             std::string feature_type = msg->getFeature_type();
-            int URI = msg->getURI();
+            int URI_route = msg->getURI();
             int data = msg->getData();
+            //std::map<int, int> customerlist;
+            //std::map<int, int> providerlist;
+            //std::map<int, int> siblinglist;
 
-            // RoutingTable = (RoutingTableItem){.SemanticResourcefeature_type= msg->getFeature_type()};
-            // RoutingTable.LocalResource [0]= msg->getURI();
-            // RoutingTable.SemanticResourcefeature_type(msg->getfeature_type());
-            // RoutingTable.LocalResource(msg->getURI());
+           //customerlist[URI]=
+
+            //std::map<std::string , struct RoutingTable> SemanticRoutingTable;
+            //SemanticRoutingTable[msg->getFeature_type()]= RoutingTable;
+
+            //customerlist[discoveryMsg->getURI]= t;
+
+
+            //RoutingTable = (RoutingTablePattern){.SemanticResourcefeature_type= msg->getFeature_type()};
+           // RoutingTable.CSECustomer=
+            //RoutingTable.SemanticResourcefeature_type(msg->getfeature_type());
+            //RoutingTable.LocalResource(msg->getURI_route());
 
             // we create an internal map
-            std::map<int,int> internalMap;
+            std::map<URI,int> internalMap;
             // we create an Iterator on the database
-            std::map< std::string, std::map<int,int>>::iterator it;
+            std::map< std::string, std::map<URI,int>>::iterator it;
             // we search for the feature_type in the database
             it = database.find(feature_type);
             // if we don't find it
             if (it == database.end())
             {
                 // putting data in the internal map as a new entry
-                internalMap[data]=URI;
+                internalMap[URI_route]=data;
             }
             // if we find the feature_type
             else
             {
                internalMap = database[feature_type];// we put the internal map inside the DataBase map next to the feature_type
-               internalMap[data]=URI;
+               internalMap[URI_route]=data;
             }
             database[feature_type]=internalMap;
+
+            EV<< "feature type added in Database"<< msg->getFeature_type() << "\n";
 
             delete msg;
 
@@ -411,7 +354,7 @@ void CSE::updateDatabase(AEMessage *msg, int op_code)
         }
         case CANCELLATION:
         {
-            // drop the entry from the CSE local database lookup the key= feature_type of AE and get list of uri ; scan the entries against the URI of request cancellation
+            // drop the entry from the CSE local database lookup the key= feature_type of AE and get list of uri ; scan the entries against the URI_route of request cancellation
             EV<< "to do" ;
             std::string feature_type = msg->getFeature_type();
             // we create an internal map
@@ -448,9 +391,10 @@ std::map<int,int> CSE::DBLookup(discoveryMessage *msg) //this function is used t
    std::map<std::string, std::map<int,int>>::iterator it;
    // extracting the feature_type
    it = database.find(feature_type);
+   // if we find the data correspond to the feature_type
    if(!(it == database.end()))
    {
-       return it->second;
+       return it->second; // because we need will send the values corresponds to the feature_type
    }
    else
    {
@@ -460,77 +404,77 @@ std::map<int,int> CSE::DBLookup(discoveryMessage *msg) //this function is used t
 
 
 // this is used to create a new Discovery Message
-discoveryMessage * CSE::generateMessage(int flag)
+discoveryMessage * CSE::generateMessage(int op_code)
 {
-    switch(flag)  {
+    switch(op_code)  {
     case QUERY:
     {
         // Produce source and destination addresses.
-        int URI = getId();
+        int URI_route = getId();
         char msgname[20];
-        sprintf(msgname, "bonjour-%d", URI);
+        sprintf(msgname, "bonjour-%d", URI_route);
     // Create message object and set source and destination field.
         discoveryMessage *msg = new discoveryMessage(msgname);
         //msg->setPayload("thermometer");
         msg->setDirection(DOWN);
-        msg->setFlag(QUERY);
-        msg->setURI(URI);
+        msg->setOp_code(QUERY);
+        msg->setURI_route(URI_route);
         return msg;
         break;
     }
     case RESPONSE:
     {
-        int URI = getId();
+        int URI_route = getId();
         char msgname[20];
-        sprintf(msgname, "bonjour-%d", URI);
+        sprintf(msgname, "bonjour-%d", URI_route);
     // Create message object and set source and destination field.
         discoveryMessage *msg = new discoveryMessage(msgname);
         //msg->setPayload("thermometer");
         msg->setDirection(DOWN);
-        msg->setFlag(RESPONSE);
-        msg->setURI(URI);
+        msg->setOp_code(RESPONSE);
+        msg->setURI_route(URI_route);
         return msg;
         break;
     }
     case NOTIFY:
     {
-        int URI = getId();
+        int URI_route = getId();
         char msgname[20];
-        sprintf(msgname, "bonjour-%d", URI);
+        sprintf(msgname, "bonjour-%d", URI_route);
     // Create message object and set source and destination field.
         discoveryMessage *msg = new discoveryMessage(msgname);
         //msg->setPayload("thermometer");
         msg->setDirection(DOWN);
-        msg->setFlag(NOTIFY);
-        msg->setURI(URI);
+        msg->setOp_code(NOTIFY);
+        msg->setURI_route(URI_route);
         return msg;
         break;
     }
     case REGISTRATION:
     {
-        int URI = getId();
+        int URI_route = getId();
         char msgname[20];
-        sprintf(msgname, "bonjour-%d", URI);
+        sprintf(msgname, "bonjour-%d", URI_route);
     // Create message object and set source and destination field.
         discoveryMessage *msg = new discoveryMessage(msgname);
         //msg->setPayload("thermometer");
         msg->setDirection(DOWN);
-        msg->setFlag(REGISTRATION);
-        msg->setURI(URI);
+        msg->setOp_code(REGISTRATION);
+        msg->setURI_route(URI_route);
         return msg;
         break;
     }
     case CANCELLATION:
     {
-        int URI = getId();
+        int URI_route = getId();
         char msgname[20];
-        sprintf(msgname, "bonjour-%d", URI);
+        sprintf(msgname, "bonjour-%d", URI_route);
     // Create message object and set source and destination field.
         discoveryMessage *msg = new discoveryMessage(msgname);
         //msg->setPayload("thermometer");
         msg->setDirection(DOWN);
-        msg->setFlag(REGISTRATION);
-        msg->setURI(URI);
+        msg->setOp_code(REGISTRATION);
+        msg->setURI_route(URI_route);
         return msg;
         break;
     }

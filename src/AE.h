@@ -17,7 +17,7 @@ class AE : public cSimpleModule  // one of the module type in omnet
       virtual void initialize() override;
       virtual void handleMessage(cMessage *msg) override;
     // application specific
-      void sendAEMessage(int flag);
+      void sendAEMessage(int op_code);
 
   private:
       int URI;
