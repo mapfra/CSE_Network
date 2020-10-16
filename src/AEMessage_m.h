@@ -24,7 +24,7 @@
  * message AEMessage
  * {
  *     int URI; // this is the unique identifer of the AE, sending the message
- *     string feature_type; // this is the feature type of the resource we are looking for; in this version of protocol 
+ *     string featureType; // this is the feature type of the resource we are looking for; in this version of protocol 
  *     // we can just query one feature type per QUERY
  *     int data; // this is the value concerning the resource we are looking for; Actually used in REGISTRATION.
  *     // TO DO it will be used in UPDATE, PUT, GET, REPLY. 
@@ -51,7 +51,7 @@ class AEMessage : public ::omnetpp::cMessage
 {
   protected:
     int URI;
-    ::omnetpp::opp_string feature_type;
+    ::omnetpp::opp_string featureType;
     int data;
     int flag;
     int maxHop;
@@ -75,8 +75,8 @@ class AEMessage : public ::omnetpp::cMessage
     // field getter/setter methods
     virtual int getURI() const;
     virtual void setURI(int URI);
-    virtual const char * getFeature_type() const;
-    virtual void setFeature_type(const char * feature_type);
+    virtual const char * getFeatureType() const;
+    virtual void setFeatureType(const char * featureType);
     virtual int getData() const;
     virtual void setData(int data);
     virtual int getFlag() const;

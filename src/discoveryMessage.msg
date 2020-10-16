@@ -18,9 +18,9 @@ message discoveryMessage
     // by each CSE Node
     
     int URI;// this is unique identifer of CSE, sending the message
-    string feature_type; // this is type of Resource CSE is looking for. Values can be "waterValve","thermometer","airStation","ATM","smartLock"
+    string featureType; // this is type of Resource CSE is looking for. Values can be "waterValve","thermometer","airStation","ATM","smartLock"
     
-    int data;// this is where results are replied; it can be
+    //int data;// this is where results are replied; it can be
     // MAP Question : What is the difference with DBresult ? empty in case of no results 
      
     int flag; //this can be

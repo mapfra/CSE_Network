@@ -17,14 +17,14 @@ class AE : public cSimpleModule  // one of the module type in omnet
       virtual void initialize() override;
       virtual void handleMessage(cMessage *msg) override;
     // application specific
-      void sendAEMessage(int flag);
+      void sendAEMessage(int flag, std::string featureType);
 
   private:
       int URI;
       int data;
       int maxHop;
-      std::string feature_type;
-      std::vector<std::string> feature_types {"waterValve","thermometer","airStation","ATM","smartLock"};
+      std::string featureType;
+      std::vector<std::string> featureTypes {"waterValve","thermometer","airStation","ATM","smartLock"};
 };
 Define_Module(AE);
 

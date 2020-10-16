@@ -66,6 +66,8 @@ notify +22 6
        // and is also useful for replying the query.
        // this is composed as follow
        // <id or URI of the CSE ,<gateIndex,simTime,direction>>
+
+
        std::map<std::string,std::map<int,int>> database;
 
 

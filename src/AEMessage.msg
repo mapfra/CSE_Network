@@ -1,7 +1,7 @@
 message AEMessage
 {
     int URI; // this is the unique identifer of the AE, sending the message
-    string feature_type; // this is the feature type of the resource we are looking for; in this version of protocol 
+    string featureType; // this is the feature type of the resource we are looking for; in this version of protocol 
     // we can just query one feature type per QUERY
     int data; // this is the value concerning the resource we are looking for; Actually used in REGISTRATION.
     // TO DO it will be used in UPDATE, PUT, GET, REPLY. 

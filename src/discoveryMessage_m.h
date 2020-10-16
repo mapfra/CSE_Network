@@ -38,9 +38,9 @@
  *     // by each CSE Node
  * 
  *     int URI;// this is unique identifer of CSE, sending the message
- *     string feature_type; // this is type of Resource CSE is looking for. Values can be "waterValve","thermometer","airStation","ATM","smartLock"
+ *     string featureType; // this is type of Resource CSE is looking for. Values can be "waterValve","thermometer","airStation","ATM","smartLock"
  * 
- *     int data;// this is where results are replied; it can be
+ *     //int data;// this is where results are replied; it can be
  *     // MAP Question : What is the difference with DBresult ? empty in case of no results 
  * 
  *     int flag; //this can be
@@ -71,8 +71,7 @@ class discoveryMessage : public ::omnetpp::cMessage
   protected:
     int initiator;
     int URI;
-    ::omnetpp::opp_string feature_type;
-    int data;
+    ::omnetpp::opp_string featureType;
     int flag;
     int hopCount;
     int direction;
@@ -101,10 +100,8 @@ class discoveryMessage : public ::omnetpp::cMessage
     virtual void setInitiator(int initiator);
     virtual int getURI() const;
     virtual void setURI(int URI);
-    virtual const char * getFeature_type() const;
-    virtual void setFeature_type(const char * feature_type);
-    virtual int getData() const;
-    virtual void setData(int data);
+    virtual const char * getFeatureType() const;
+    virtual void setFeatureType(const char * featureType);
     virtual int getFlag() const;
     virtual void setFlag(int flag);
     virtual int getHopCount() const;

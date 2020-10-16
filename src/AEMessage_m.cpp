@@ -207,7 +207,7 @@ AEMessage& AEMessage::operator=(const AEMessage& other)
 void AEMessage::copy(const AEMessage& other)
 {
     this->URI = other.URI;
-    this->feature_type = other.feature_type;
+    this->featureType = other.featureType;
     this->data = other.data;
     this->flag = other.flag;
     this->maxHop = other.maxHop;
@@ -217,7 +217,7 @@ void AEMessage::parsimPack(omnetpp::cCommBuffer *b) const
 {
     ::omnetpp::cMessage::parsimPack(b);
     doParsimPacking(b,this->URI);
-    doParsimPacking(b,this->feature_type);
+    doParsimPacking(b,this->featureType);
     doParsimPacking(b,this->data);
     doParsimPacking(b,this->flag);
     doParsimPacking(b,this->maxHop);
@@ -227,7 +227,7 @@ void AEMessage::parsimUnpack(omnetpp::cCommBuffer *b)
 {
     ::omnetpp::cMessage::parsimUnpack(b);
     doParsimUnpacking(b,this->URI);
-    doParsimUnpacking(b,this->feature_type);
+    doParsimUnpacking(b,this->featureType);
     doParsimUnpacking(b,this->data);
     doParsimUnpacking(b,this->flag);
     doParsimUnpacking(b,this->maxHop);
@@ -243,14 +243,14 @@ void AEMessage::setURI(int URI)
     this->URI = URI;
 }
 
-const char * AEMessage::getFeature_type() const
+const char * AEMessage::getFeatureType() const
 {
-    return this->feature_type.c_str();
+    return this->featureType.c_str();
 }
 
-void AEMessage::setFeature_type(const char * feature_type)
+void AEMessage::setFeatureType(const char * featureType)
 {
-    this->feature_type = feature_type;
+    this->featureType = featureType;
 }
 
 int AEMessage::getData() const
@@ -379,7 +379,7 @@ const char *AEMessageDescriptor::getFieldName(int field) const
     }
     static const char *fieldNames[] = {
         "URI",
-        "feature_type",
+        "featureType",
         "data",
         "flag",
         "maxHop",
@@ -392,7 +392,7 @@ int AEMessageDescriptor::findField(const char *fieldName) const
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
     int base = basedesc ? basedesc->getFieldCount() : 0;
     if (fieldName[0]=='U' && strcmp(fieldName, "URI")==0) return base+0;
-    if (fieldName[0]=='f' && strcmp(fieldName, "feature_type")==0) return base+1;
+    if (fieldName[0]=='f' && strcmp(fieldName, "featureType")==0) return base+1;
     if (fieldName[0]=='d' && strcmp(fieldName, "data")==0) return base+2;
     if (fieldName[0]=='f' && strcmp(fieldName, "flag")==0) return base+3;
     if (fieldName[0]=='m' && strcmp(fieldName, "maxHop")==0) return base+4;
@@ -482,7 +482,7 @@ std::string AEMessageDescriptor::getFieldValueAsString(void *object, int field, 
     AEMessage *pp = (AEMessage *)object; (void)pp;
     switch (field) {
         case 0: return long2string(pp->getURI());
-        case 1: return oppstring2string(pp->getFeature_type());
+        case 1: return oppstring2string(pp->getFeatureType());
         case 2: return long2string(pp->getData());
         case 3: return long2string(pp->getFlag());
         case 4: return long2string(pp->getMaxHop());
@@ -501,7 +501,7 @@ bool AEMessageDescriptor::setFieldValueAsString(void *object, int field, int i, 
     AEMessage *pp = (AEMessage *)object; (void)pp;
     switch (field) {
         case 0: pp->setURI(string2long(value)); return true;
-        case 1: pp->setFeature_type((value)); return true;
+        case 1: pp->setFeatureType((value)); return true;
         case 2: pp->setData(string2long(value)); return true;
         case 3: pp->setFlag(string2long(value)); return true;
         case 4: pp->setMaxHop(string2long(value)); return true;

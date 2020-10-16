@@ -31,7 +31,6 @@ void CSE::handleMessage(cMessage *msg)
            case QUERY : {
                // if it is a query msg we create a discovery msg and we start ASDR
                // mapchg parseRouting(aeMsg);
-
                generateDiscoveryMessage(aeMsg);
                break;
            }
@@ -68,20 +67,27 @@ void CSE::handleMessage(cMessage *msg)
              EV<< "Switch OPCODE  \n";
 
              case QUERY: {
-
                EV<< "The Message is a query \n";
-
-
-
                if  (discoveryMsg->getHopCount()<=0){
                    //EV<< "HopCount=" << discoveryMsg->getHopCount() <<"\n";
                    //Respond to the initiator that the discovery ends
-                   // TODO: DBLookup part to be added here
+                   // DBLookup part to be added here
+                    std::map<int,int> result;
+                    std::map<int,int>::iterator it;
+
+
+                    EV<< "Before call to DBlookup \n";
+                    result = DBLookup(discoveryMsg);
+                    //Et on itère sur la map result
+                    for (it = result.begin(); it != result.end(); it++) {
+                          EV<< "valeur trouvee " << it->first <<"  " << it->second << "\n";
+                    }
+                    discoveryMsg->setDbResult(result);
                     discoveryMsg->setFlag(RESPONSE);
                    // TODO: set the message flags according to result from DBLookup
                    //You extract from the top of the list the gate that has to be used
                     //MAP change
-                    EV<< "THopcount is 0 so we generate a self response message \n";
+                    EV<< "The Hopcount is 0 so we generate a self response message \n";
                     generateResponseMessage(discoveryMsg);
                    //send(discoveryMsg->dup(), discoveryMsg->getGateVector().back()->getName() , discoveryMsg->getGateVector().back()->getIndex());
 
@@ -111,6 +117,7 @@ void CSE::handleMessage(cMessage *msg)
                             send(discoveryMsg->dup(),"customer$o", i);
                            }
                        }else {
+                           // if there are no customers
                           generateResponseMessage(discoveryMsg);
                        }
                        //propagate the discovery according to the direction and the algo
@@ -165,8 +172,8 @@ void CSE::generateDiscoveryMessage(AEMessage *msg) {
     discoveryMessage *queryMsg = new discoveryMessage ("QUERY");
     // we extract the URI from the AE initiator of the message
     queryMsg->setInitiator(msg->getURI());
-    // we extract the msg feature_type from AEmessage and we set it in the discovery Message
-    queryMsg->setFeature_type(msg->getFeature_type());
+    // we extract the msg featureType from AEmessage and we set it in the discovery Message
+    queryMsg->setFeatureType(msg->getFeatureType());
 
     // we set flag to QUERY
     queryMsg->setFlag(QUERY);
@@ -204,7 +211,7 @@ void CSE::generateDiscoveryMessage(AEMessage *msg) {
 }
 
 void CSE::generateResponseMessage(discoveryMessage *responseMsg) {
-// this function transforms a query message to a discovery message
+// this function transforms a discovery message to a response message
      // these data should not change during the routing between CSEs
     // TODO lets consider if the URI parameter  is useful ??
     EV<< "inside generateResponseMessage Procedure"<<"\n";
@@ -375,65 +382,76 @@ void CSE::updateDatabase(AEMessage *msg, int op_code)
     // the message is sent to be stored in the Database
         case REGISTRATION:
         {
-            // we extract the feature_type; URI; data from the AEmessage
-            std::string feature_type = msg->getFeature_type();
+            // we extract the featureType; URI; data from the AEmessage
+            std::string featureType = msg->getFeatureType();
             int URI = msg->getURI();
             int data = msg->getData();
-
-            // RoutingTable = (RoutingTableItem){.SemanticResourcefeature_type= msg->getFeature_type()};
+            EV << "updateDB due to a REGISTRATION : FType="<< featureType << " URI=" << URI << " data=" << data <<"\n";
+            // RoutingTable = (RoutingTableItem){.SemanticResourcefeatureType= msg->getFeatureType()};
             // RoutingTable.LocalResource [0]= msg->getURI();
-            // RoutingTable.SemanticResourcefeature_type(msg->getfeature_type());
+            // RoutingTable.SemanticResourcefeature_type(msg->getfeatureType());
             // RoutingTable.LocalResource(msg->getURI());
 
             // we create an internal map
             std::map<int,int> internalMap;
             // we create an Iterator on the database
             std::map< std::string, std::map<int,int>>::iterator it;
-            // we search for the feature_type in the database
-            it = database.find(feature_type);
+            EV << "le nbre d'elements de  database est " << database.size() <<"\n";
+            // we search for the featureType in the database
+            it = database.find(featureType);
             // if we don't find it
-            if (it == database.end())
-            {
+            if (it == database.end()){
+                EV << "FeatureType not yet in DB\n";
                 // putting data in the internal map as a new entry
                 internalMap[data]=URI;
-            }
-            // if we find the feature_type
-            else
-            {
-               internalMap = database[feature_type];// we put the internal map inside the DataBase map next to the feature_type
+                database[featureType]=internalMap;
+                //database.insert(featureType, internalMap)
+                EV << "le nbre d'elements de  database est " << database.size() <<"\n";
+                EV << "le nbre d'elements de  internaldatabase est " << internalMap.size() <<"\n";
+
+            } else {   // if we find the featureType
+               EV << "FeatureType already exist\n";
+               internalMap = database[featureType];// we put the internal map inside the DataBase map next to the featureType
                internalMap[data]=URI;
+               database[featureType]=internalMap;
+               EV << "le nbre d'elements de  database est " << database.size() <<"\n";
+               EV << "le nbre d'elements de  internaldatabase est " << internalMap.size() <<"\n";
             }
-            database[feature_type]=internalMap;
-
             delete msg;
-
             break;
         }
         case CANCELLATION:
         {
-            // drop the entry from the CSE local database lookup the key= feature_type of AE and get list of uri ; scan the entries against the URI of request cancellation
-            EV<< "to do" ;
-            std::string feature_type = msg->getFeature_type();
+            // drop the entry from the CSE local database lookup the key= featureType of AE and get list of uri ; scan the entries against the URI of request cancellation
+
+            std::string featureType = msg->getFeatureType();
+            int URI = msg->getURI();
+            int data = msg->getData();
+            EV << "updateDB due to a CANCELLATION : FType="<< featureType << " URI=" << URI << " data=" << data <<"\n";
             // we create an internal map
              std::map<int,int> internalMap;
             // we create an Iterator on the database
              std::map< std::string, std::map<int,int>>::iterator it;
-            // we search for the feature_type in the database
-            //it = database.find(feature_type);
+            // we search for the featureType in the database
+            it = database.find(featureType);
             if(it== database.end())
             {
-
-
+                EV << "FeatureType to be cancelled not found in DB \n";
             }
             else
             {
+                EV << "FeatureType to be cancelled  founded in DB \n";
+                internalMap = database[featureType];
+                internalMap.erase(URI);
+                database[featureType]=internalMap;
+                // here we erace the all liste of feature type
                 database.erase(it);
             }
             break;
         }
-            default:
+        default:
                 break;
-    }
+    }// end switch opcode
 
 }
 
@@ -441,19 +459,21 @@ void CSE::updateDatabase(AEMessage *msg, int op_code)
 std::map<int,int> CSE::DBLookup(discoveryMessage *msg) //this function is used to lookup in the local database
 {
 
-   //getting the feature_type from the discovery message
-   std::string feature_type= msg->getFeature_type();
-   //EV<< "Feature type " << feature_type.c_str() << "\n";
+   //getting the featureType from the discovery message
+   std::string featureType= msg->getFeatureType();
+
+   //EV<< "Feature type " << featureType.c_str() << "\n";
    // creating an iterator for the database
    std::map<std::string, std::map<int,int>>::iterator it;
-   // extracting the feature_type
-   it = database.find(feature_type);
+   // extracting the featureType
+   it = database.find(featureType);
    if(!(it == database.end()))
    {
+       EV << "Resource of type " << featureType << "founded in URI \n";
        return it->second;
    }
    else
-   {
+   {    EV << "No Resource of type "<< featureType << "founded the local databease \n";
        return std::map<int,int> { {NOT_FOUND,NOT_FOUND} };
    }
 }
@@ -483,7 +503,7 @@ discoveryMessage * CSE::generateMessage(int flag)
         int URI = getId();
         char msgname[20];
         sprintf(msgname, "bonjour-%d", URI);
-    // Create message object and set source and destination field.
+        // Create message object and set source and destination field.
         discoveryMessage *msg = new discoveryMessage(msgname);
         //msg->setPayload("thermometer");
         msg->setDirection(DOWN);
@@ -511,7 +531,7 @@ discoveryMessage * CSE::generateMessage(int flag)
         int URI = getId();
         char msgname[20];
         sprintf(msgname, "bonjour-%d", URI);
-    // Create message object and set source and destination field.
+        // Create message object and set source and destination field.
         discoveryMessage *msg = new discoveryMessage(msgname);
         //msg->setPayload("thermometer");
         msg->setDirection(DOWN);
@@ -536,7 +556,6 @@ discoveryMessage * CSE::generateMessage(int flag)
     }
     default:
         break;
-
 }
 }
 
